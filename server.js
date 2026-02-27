@@ -31,7 +31,7 @@ io.on("connection", (socket) => {
 });
 
 // Puerto
-const PORT = 3000;
-http.listen(PORT, () => {
-  console.log(`Servidor corriendo en http://localhost:${PORT}`);
+const port = process.env.PORT || 3000; // Render asigna el puerto, si no usa 3000
+app.listen(port, () => {
+  console.log(`Servidor corriendo en el puerto ${port}`);
 });
