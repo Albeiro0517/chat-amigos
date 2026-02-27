@@ -163,17 +163,15 @@ function enviar(){
 
 // Vaciar chat
 function vaciarChat(){
-  messages.innerHTML = "";
+  socket.emit("clear chat");
 }
 
 // Escuchar mensajes
 socket.on("chat message", function(data){
     const li = document.createElement("li");
     li.innerHTML = `<strong style="color:${getColor(data.nombre)}">${data.nombre}:</strong> ${data.msg}`;
-
     if(data.nombre === nombre) li.classList.add("self");
     li.querySelectorAll('img').forEach(img=>img.classList.add('chat-img'));
-
     messages.appendChild(li);
     messages.scrollTop = messages.scrollHeight;
 });
@@ -181,6 +179,24 @@ socket.on("chat message", function(data){
 // Mostrar usuarios conectados
 socket.on("updateUsers", (count) => {
   userCountDiv.innerText = `Conectados: ${count}`;
+});
+
+// Mostrar historial al conectarse
+socket.on("chat history", (history) => {
+  messages.innerHTML = "";
+  history.forEach(data => {
+    const li = document.createElement("li");
+    li.innerHTML = `<strong style="color:${getColor(data.nombre)}">${data.nombre}:</strong> ${data.msg}`;
+    if(data.nombre === nombre) li.classList.add("self");
+    li.querySelectorAll('img').forEach(img=>img.classList.add('chat-img'));
+    messages.appendChild(li);
+  });
+  messages.scrollTop = messages.scrollHeight;
+});
+
+// Escuchar cuando alguien vacía el chat
+socket.on("chat cleared", () => {
+  messages.innerHTML = "";
 });
 
 // Editar mensaje
