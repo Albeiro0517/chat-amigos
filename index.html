@@ -110,11 +110,19 @@
       margin-bottom: 10px;
     }
 
+    #userCount {
+      text-align: center;
+      margin-bottom: 10px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
   </style>
 </head>
 <body>
 <div id="chat">
   <h2>AlbeiroChat 💬</h2>
+  <div id="userCount">Conectados: 0</div>
   <ul id="messages"></ul>
 
   <div id="inputArea">
@@ -131,6 +139,7 @@
 <script>
 const socket = io();
 const messages = document.getElementById("messages");
+const userCountDiv = document.getElementById("userCount");
 
 // Preguntar nombre
 const nombre = prompt("¿Cuál es tu nombre?") || "Anon";
@@ -167,6 +176,11 @@ socket.on("chat message", function(data){
 
     messages.appendChild(li);
     messages.scrollTop = messages.scrollHeight;
+});
+
+// Mostrar usuarios conectados
+socket.on("updateUsers", (count) => {
+  userCountDiv.innerText = `Conectados: ${count}`;
 });
 
 // Editar mensaje
