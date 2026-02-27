@@ -3,7 +3,7 @@ const app = express();
 const http = require("http").createServer(app);
 const io = require("socket.io")(http);
 
-// Para recibir imágenes grandes
+// Permitir recibir imágenes grandes
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
@@ -15,26 +15,28 @@ app.get("/", (req, res) => {
   res.sendFile(__dirname + "/index.html");
 });
 
-// Contador de usuarios conectados
-let connectedUsers = 0;
+// -------------------------
+// Variables del chat
+// -------------------------
+let connectedUsers = 0;    // Contador de usuarios conectados
+let chatHistory = [];      // Historial de mensajes
 
-// Historial de chat
-let chatHistory = [];
-
+// -------------------------
 // Socket.IO
+// -------------------------
 io.on("connection", (socket) => {
-  connectedUsers++;
-  console.log("Un usuario se conectó. Total:", connectedUsers);
+  connectedUsers++; // Nuevo usuario
+  console.log("Usuario conectado. Total:", connectedUsers);
 
-  // Enviar a todos la cantidad de usuarios conectados
+  // Enviar contador actualizado a todos
   io.emit("updateUsers", connectedUsers);
 
   // Enviar historial al usuario que se conecta
   socket.emit("chat history", chatHistory);
 
-  // Escuchar mensajes de chat
+  // Escuchar mensajes
   socket.on("chat message", (data) => {
-    chatHistory.push(data); // Guardar mensaje
+    chatHistory.push(data);        // Guardar mensaje
     io.emit("chat message", data); // Enviar a todos
   });
 
@@ -46,8 +48,8 @@ io.on("connection", (socket) => {
 
   // Usuario se desconecta
   socket.on("disconnect", () => {
-    connectedUsers--;
-    console.log("Un usuario se desconectó. Total:", connectedUsers);
+    connectedUsers--; // Restar al contador
+    console.log("Usuario desconectado. Total:", connectedUsers);
     io.emit("updateUsers", connectedUsers);
   });
 });
