@@ -25,19 +25,19 @@ let chatHistory = [];      // Historial de mensajes
 // Socket.IO
 // -------------------------
 io.on("connection", (socket) => {
-  connectedUsers++; // Nuevo usuario
+  connectedUsers++; 
   console.log("Usuario conectado. Total:", connectedUsers);
 
-  // Enviar contador actualizado a todos
+  // Actualizar contador a todos
   io.emit("updateUsers", connectedUsers);
 
-  // Enviar historial al usuario que se conecta
+  // Enviar historial solo al usuario que se conecta
   socket.emit("chat history", chatHistory);
 
-  // Escuchar mensajes
+  // Recibir mensajes
   socket.on("chat message", (data) => {
-    chatHistory.push(data);        // Guardar mensaje
-    io.emit("chat message", data); // Enviar a todos
+    chatHistory.push(data);        
+    io.emit("chat message", data);
   });
 
   // Vaciar chat
@@ -46,16 +46,16 @@ io.on("connection", (socket) => {
     io.emit("chat cleared");
   });
 
-  // Usuario se desconecta
+  // Usuario desconectado
   socket.on("disconnect", () => {
-    connectedUsers--; // Restar al contador
+    connectedUsers = Math.max(connectedUsers - 1, 0);
     console.log("Usuario desconectado. Total:", connectedUsers);
     io.emit("updateUsers", connectedUsers);
   });
 });
 
-// Puerto dinámico para Render
+// Puerto asignado por Render o 3000 local
 const port = process.env.PORT || 3000;
 http.listen(port, () => {
-  console.log(`Servidor corriendo en el puerto ${port}`);
+  console.log(`Servidor corriendo en puerto ${port}`);
 });

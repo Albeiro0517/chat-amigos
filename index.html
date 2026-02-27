@@ -5,118 +5,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#4CAF50">
-
   <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #000;
-      margin:0;
-      height:100vh;
-      color: #fff;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-
-    #chat {
-      max-width: 500px;
-      width: 95%;
-      height: 95vh;
-      background: #111;
-      padding: 20px;
-      display: flex;
-      flex-direction: column;
-      border-radius: 10px;
-      box-shadow: 0 0 20px #000;
-      overflow: hidden;
-    }
-
-    #messages {
-      list-style: none;
-      flex: 1;
-      overflow-y: auto;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      scroll-behavior: smooth;
-    }
-
-    #messages li {
-      max-width: 75%;
-      padding: 10px;
-      border-radius: 15px;
-      word-wrap: break-word;
-      background: #333;
-      opacity: 0;
-      transform: translateY(10px);
-      animation: slideIn 0.3s forwards;
-    }
-
-    #messages li.self {
-      align-self: flex-end;
-      background: #4CAF50;
-      text-align: right;
-    }
-
-    @keyframes slideIn {
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    #inputArea {
-      display:flex;
-      gap:5px;
-      flex-wrap: wrap;
-      margin-top: 10px;
-    }
-
-    #msg {
-      flex: 1;
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      background: #222;
-      color: #fff;
-    }
-
-    button {
-      padding: 10px;
-      border-radius: 10px;
-      border: none;
-      cursor: pointer;
-      background-color: #4CAF50;
-      color: #fff;
-    }
-
-    #fileInput { padding: 5px; }
-
-    img.chat-img {
-      max-width: 100%;
-      border-radius: 10px;
-      margin-top: 5px;
-    }
-
-    #installBtn {
-      margin-top: 10px;
-      padding: 10px;
-      font-size: 16px;
-      cursor: pointer;
-      background-color:#007bff;
-    }
-
-    h2 {
-      text-align: center;
-      margin-bottom: 10px;
-    }
-
-    #userCount {
-      text-align: center;
-      margin-bottom: 10px;
-      font-weight: bold;
-      color: #4CAF50;
-    }
-
+    body { font-family: Arial; background: #000; margin:0; height:100vh; color:#fff; display:flex; justify-content:center; align-items:center; }
+    #chat { max-width:500px; width:95%; height:95vh; background:#111; padding:20px; display:flex; flex-direction:column; border-radius:10px; box-shadow:0 0 20px #000; overflow:hidden; }
+    #messages { list-style:none; flex:1; overflow-y:auto; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; scroll-behavior:smooth; }
+    #messages li { max-width:75%; padding:10px; border-radius:15px; word-wrap:break-word; background:#333; opacity:0; transform:translateY(10px); animation:slideIn 0.3s forwards; }
+    #messages li.self { align-self:flex-end; background:#4CAF50; text-align:right; }
+    @keyframes slideIn { to { opacity:1; transform:translateY(0); } }
+    #inputArea { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
+    #msg { flex:1; padding:10px; border-radius:10px; border:none; background:#222; color:#fff; }
+    button { padding:10px; border-radius:10px; border:none; cursor:pointer; background-color:#4CAF50; color:#fff; }
+    #fileInput { padding:5px; }
+    img.chat-img { max-width:100%; border-radius:10px; margin-top:5px; }
+    #installBtn { margin-top:10px; padding:10px; font-size:16px; cursor:pointer; background-color:#007bff; }
+    h2 { text-align:center; margin-bottom:10px; }
+    #userCount { text-align:center; margin-bottom:10px; font-weight:bold; color:#4CAF50; }
   </style>
 </head>
 <body>
@@ -141,10 +44,8 @@ const socket = io();
 const messages = document.getElementById("messages");
 const userCountDiv = document.getElementById("userCount");
 
-// Preguntar nombre
 const nombre = prompt("¿Cuál es tu nombre?") || "Anon";
 
-// Colores dinámicos por usuario
 const userColors = {};
 function getColor(user){
   if(!userColors[user]){
@@ -153,7 +54,6 @@ function getColor(user){
   return userColors[user];
 }
 
-// Enviar mensaje
 function enviar(){
     const input = document.getElementById("msg");
     if(input.value.trim() === "") return;
@@ -161,12 +61,11 @@ function enviar(){
     input.value="";
 }
 
-// Vaciar chat
 function vaciarChat(){
   socket.emit("clear chat");
 }
 
-// Escuchar mensajes
+// Mostrar mensajes
 socket.on("chat message", function(data){
     const li = document.createElement("li");
     li.innerHTML = `<strong style="color:${getColor(data.nombre)}">${data.nombre}:</strong> ${data.msg}`;
@@ -176,12 +75,12 @@ socket.on("chat message", function(data){
     messages.scrollTop = messages.scrollHeight;
 });
 
-// Mostrar usuarios conectados
+// Actualizar contador de usuarios
 socket.on("updateUsers", (count) => {
   userCountDiv.innerText = `Conectados: ${count}`;
 });
 
-// Mostrar historial al conectarse
+// Enviar historial al conectarse
 socket.on("chat history", (history) => {
   messages.innerHTML = "";
   history.forEach(data => {
@@ -194,12 +93,9 @@ socket.on("chat history", (history) => {
   messages.scrollTop = messages.scrollHeight;
 });
 
-// Escuchar cuando alguien vacía el chat
-socket.on("chat cleared", () => {
-  messages.innerHTML = "";
-});
+// Chat vaciado
+socket.on("chat cleared", () => { messages.innerHTML = ""; });
 
-// Editar mensaje
 messages.addEventListener('dblclick', (e)=>{
   if(e.target.tagName === 'LI'){
     const nuevo = prompt("Editar mensaje:", e.target.innerText);
@@ -222,7 +118,6 @@ fileInput.addEventListener("change", (e)=>{
 });
 </script>
 
-<!-- Service Worker -->
 <script>
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('/sw.js')
@@ -231,17 +126,14 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 
-<!-- PWA Instalación -->
 <script>
 let deferredPrompt;
 const installBtn = document.getElementById('installBtn');
-
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
   installBtn.style.display = 'block';
 });
-
 installBtn.addEventListener('click', async () => {
   if(deferredPrompt){
     deferredPrompt.prompt();
@@ -251,8 +143,6 @@ installBtn.addEventListener('click', async () => {
     installBtn.style.display = 'none';
   }
 });
-
-// iOS
 const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
 const isInStandalone = window.navigator.standalone;
 if(isIos && !isInStandalone){
