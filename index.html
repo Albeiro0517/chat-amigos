@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AlbeiroChat</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#4CAF50">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #000;
+      margin:0;
+      height:100vh;
+      color: #fff;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #chat {
+      max-width: 500px;
+      width: 95%;
+      height: 95vh;
+      background: #111;
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      border-radius: 10px;
+      box-shadow: 0 0 20px #000;
+      overflow: hidden;
+    }
+
+    #messages {
+      list-style: none;
+      flex: 1;
+      overflow-y: auto;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      scroll-behavior: smooth;
+    }
+
+    #messages li {
+      max-width: 75%;
+      padding: 10px;
+      border-radius: 15px;
+      word-wrap: break-word;
+      background: #333;
+      opacity: 0;
+      transform: translateY(10px);
+      animation: slideIn 0.3s forwards;
+    }
+
+    #messages li.self {
+      align-self: flex-end;
+      background: #4CAF50;
+      text-align: right;
+    }
+
+    @keyframes slideIn {
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    #inputArea {
+      display:flex;
+      gap:5px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    #msg {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      background: #222;
+      color: #fff;
+    }
+
+    button {
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      cursor: pointer;
+      background-color: #4CAF50;
+      color: #fff;
+    }
+
+    #fileInput { padding: 5px; }
+
+    img.chat-img {
+      max-width: 100%;
+      border-radius: 10px;
+      margin-top: 5px;
+    }
+
+    #installBtn {
+      margin-top: 10px;
+      padding: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      background-color:#007bff;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 10px;
+    }
+
+  </style>
+</head>
+<body>
+<div id="chat">
+  <h2>AlbeiroChat 💬</h2>
+  <ul id="messages"></ul>
+
+  <div id="inputArea">
+    <input id="msg" placeholder="Escribe..." />
+    <button onclick="enviar()">Enviar</button>
+    <button onclick="vaciarChat()">Vaciar chat</button>
+    <input type="file" id="fileInput" />
+  </div>
+
+  <button id="installBtn" style="display:none;">Instalar AlbeiroChat</button>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+const socket = io();
+const messages = document.getElementById("messages");
+
+// Preguntar nombre
+const nombre = prompt("¿Cuál es tu nombre?") || "Anon";
+
+// Colores dinámicos por usuario
+const userColors = {};
+function getColor(user){
+  if(!userColors[user]){
+    userColors[user] = "#" + Math.floor(Math.random()*16777215).toString(16);
+  }
+  return userColors[user];
+}
+
+// Enviar mensaje
+function enviar(){
+    const input = document.getElementById("msg");
+    if(input.value.trim() === "") return;
+    socket.emit("chat message", { nombre, msg: input.value });
+    input.value="";
+}
+
+// Vaciar chat
+function vaciarChat(){
+  messages.innerHTML = "";
+}
+
+// Escuchar mensajes
+socket.on("chat message", function(data){
+    const li = document.createElement("li");
+    li.innerHTML = `<strong style="color:${getColor(data.nombre)}">${data.nombre}:</strong> ${data.msg}`;
+
+    if(data.nombre === nombre) li.classList.add("self");
+    li.querySelectorAll('img').forEach(img=>img.classList.add('chat-img'));
+
+    messages.appendChild(li);
+    messages.scrollTop = messages.scrollHeight;
+});
+
+// Editar mensaje
+messages.addEventListener('dblclick', (e)=>{
+  if(e.target.tagName === 'LI'){
+    const nuevo = prompt("Editar mensaje:", e.target.innerText);
+    if(nuevo !== null) e.target.innerText = nuevo;
+  }
+});
+
+// Adjuntar archivos
+const fileInput = document.getElementById("fileInput");
+fileInput.addEventListener("change", (e)=>{
+    const file = e.target.files[0];
+    if(file){
+        const reader = new FileReader();
+        reader.onload = function(evt){
+            socket.emit("chat message", { nombre, msg: `<img src="${evt.target.result}" class="chat-img">` });
+        }
+        reader.readAsDataURL(file);
+    }
+    e.target.value = "";
+});
+</script>
+
+<!-- Service Worker -->
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('/sw.js')
+    .then(()=>console.log("Service Worker registrado"))
+    .catch(err=>console.log("Error registrando Service Worker:", err));
+}
+</script>
+
+<!-- PWA Instalación -->
+<script>
+let deferredPrompt;
+const installBtn = document.getElementById('installBtn');
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installBtn.style.display = 'block';
+});
+
+installBtn.addEventListener('click', async () => {
+  if(deferredPrompt){
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('PWA install resultado:', outcome);
+    deferredPrompt = null;
+    installBtn.style.display = 'none';
+  }
+});
+
+// iOS
+const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
+const isInStandalone = window.navigator.standalone;
+if(isIos && !isInStandalone){
+  installBtn.style.display = 'block';
+  installBtn.innerText = 'Para instalar: Compartir → Añadir a pantalla de inicio';
+}
+</script>
+</body>
+</html>
