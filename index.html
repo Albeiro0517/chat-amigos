@@ -1,154 +1,103 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>AlbeiroChat</title>
+  <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#4CAF50">
+  <title>Chat Amigos 24/7</title>
   <style>
-    body { font-family: Arial; background: #000; margin:0; height:100vh; color:#fff; display:flex; justify-content:center; align-items:center; }
-    #chat { max-width:500px; width:95%; height:95vh; background:#111; padding:20px; display:flex; flex-direction:column; border-radius:10px; box-shadow:0 0 20px #000; overflow:hidden; }
-    #messages { list-style:none; flex:1; overflow-y:auto; margin:0; padding:0; display:flex; flex-direction:column; gap:8px; scroll-behavior:smooth; }
-    #messages li { max-width:75%; padding:10px; border-radius:15px; word-wrap:break-word; background:#333; opacity:0; transform:translateY(10px); animation:slideIn 0.3s forwards; }
-    #messages li.self { align-self:flex-end; background:#4CAF50; text-align:right; }
-    @keyframes slideIn { to { opacity:1; transform:translateY(0); } }
-    #inputArea { display:flex; gap:5px; flex-wrap:wrap; margin-top:10px; }
-    #msg { flex:1; padding:10px; border-radius:10px; border:none; background:#222; color:#fff; }
-    button { padding:10px; border-radius:10px; border:none; cursor:pointer; background-color:#4CAF50; color:#fff; }
-    #fileInput { padding:5px; }
-    img.chat-img { max-width:100%; border-radius:10px; margin-top:5px; }
-    #installBtn { margin-top:10px; padding:10px; font-size:16px; cursor:pointer; background-color:#007bff; }
-    h2 { text-align:center; margin-bottom:10px; }
-    #userCount { text-align:center; margin-bottom:10px; font-weight:bold; color:#4CAF50; }
+    body { font-family: Arial, sans-serif; margin: 0; padding: 0; background: #f0f0f0; }
+    #chat { max-width: 600px; margin: 20px auto; background: #fff; padding: 20px; border-radius: 10px; }
+    #messages { list-style: none; padding: 0; max-height: 300px; overflow-y: auto; }
+    #messages li { padding: 5px 10px; margin-bottom: 5px; border-bottom: 1px solid #eee; }
+    #userCount { margin-bottom: 10px; }
+    #form { display: flex; }
+    #input { flex: 1; padding: 10px; }
+    #send { padding: 10px; }
+    #clear { margin-top: 10px; }
   </style>
 </head>
 <body>
-<div id="chat">
-  <h2>AlbeiroChat 💬</h2>
-  <div id="userCount">Conectados: 0</div>
-  <ul id="messages"></ul>
-
-  <div id="inputArea">
-    <input id="msg" placeholder="Escribe..." />
-    <button onclick="enviar()">Enviar</button>
-    <button onclick="vaciarChat()">Vaciar chat</button>
-    <input type="file" id="fileInput" />
+  <div id="chat">
+    <h2>Chat Amigos 24/7</h2>
+    <div id="userCount">Usuarios conectados: 0</div>
+    <ul id="messages"></ul>
+    <form id="form">
+      <input id="input" autocomplete="off" placeholder="Escribe tu mensaje..." />
+      <button id="send">Enviar</button>
+    </form>
+    <button id="clear">Vaciar chat</button>
   </div>
 
-  <button id="installBtn" style="display:none;">Instalar AlbeiroChat</button>
-</div>
+  <script src="/socket.io/socket.io.js"></script>
+  <script>
+    const socket = io();
 
-<script src="/socket.io/socket.io.js"></script>
-<script>
-const socket = io();
-const messages = document.getElementById("messages");
-const userCountDiv = document.getElementById("userCount");
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const messages = document.getElementById('messages');
+    const userCount = document.getElementById('userCount');
+    const clearBtn = document.getElementById('clear');
 
-const nombre = prompt("¿Cuál es tu nombre?") || "Anon";
-
-const userColors = {};
-function getColor(user){
-  if(!userColors[user]){
-    userColors[user] = "#" + Math.floor(Math.random()*16777215).toString(16);
-  }
-  return userColors[user];
-}
-
-function enviar(){
-    const input = document.getElementById("msg");
-    if(input.value.trim() === "") return;
-    socket.emit("chat message", { nombre, msg: input.value });
-    input.value="";
-}
-
-function vaciarChat(){
-  socket.emit("clear chat");
-}
-
-// Mostrar mensajes
-socket.on("chat message", function(data){
-    const li = document.createElement("li");
-    li.innerHTML = `<strong style="color:${getColor(data.nombre)}">${data.nombre}:</strong> ${data.msg}`;
-    if(data.nombre === nombre) li.classList.add("self");
-    li.querySelectorAll('img').forEach(img=>img.classList.add('chat-img'));
-    messages.appendChild(li);
-    messages.scrollTop = messages.scrollHeight;
-});
-
-// Actualizar contador de usuarios
-socket.on("updateUsers", (count) => {
-  userCountDiv.innerText = `Conectados: ${count}`;
-});
-
-// Enviar historial al conectarse
-socket.on("chat history", (history) => {
-  messages.innerHTML = "";
-  history.forEach(data => {
-    const li = document.createElement("li");
-    li.innerHTML = `<strong style="color:${getColor(data.nombre)}">${data.nombre}:</strong> ${data.msg}`;
-    if(data.nombre === nombre) li.classList.add("self");
-    li.querySelectorAll('img').forEach(img=>img.classList.add('chat-img'));
-    messages.appendChild(li);
-  });
-  messages.scrollTop = messages.scrollHeight;
-});
-
-// Chat vaciado
-socket.on("chat cleared", () => { messages.innerHTML = ""; });
-
-messages.addEventListener('dblclick', (e)=>{
-  if(e.target.tagName === 'LI'){
-    const nuevo = prompt("Editar mensaje:", e.target.innerText);
-    if(nuevo !== null) e.target.innerText = nuevo;
-  }
-});
-
-// Adjuntar archivos
-const fileInput = document.getElementById("fileInput");
-fileInput.addEventListener("change", (e)=>{
-    const file = e.target.files[0];
-    if(file){
-        const reader = new FileReader();
-        reader.onload = function(evt){
-            socket.emit("chat message", { nombre, msg: `<img src="${evt.target.result}" class="chat-img">` });
-        }
-        reader.readAsDataURL(file);
+    // -------------------------
+    // Función para agregar mensaje
+    // -------------------------
+    function addMessage(msg) {
+      const li = document.createElement('li');
+      li.textContent = msg;
+      messages.appendChild(li);
+      messages.scrollTop = messages.scrollHeight;
     }
-    e.target.value = "";
-});
-</script>
 
-<script>
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/sw.js')
-    .then(()=>console.log("Service Worker registrado"))
-    .catch(err=>console.log("Error registrando Service Worker:", err));
-}
-</script>
+    // -------------------------
+    // Solicitar permisos de notificación
+    // -------------------------
+    if ("Notification" in window) {
+      Notification.requestPermission();
+    }
 
-<script>
-let deferredPrompt;
-const installBtn = document.getElementById('installBtn');
-window.addEventListener('beforeinstallprompt', (e) => {
-  e.preventDefault();
-  deferredPrompt = e;
-  installBtn.style.display = 'block';
-});
-installBtn.addEventListener('click', async () => {
-  if(deferredPrompt){
-    deferredPrompt.prompt();
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log('PWA install resultado:', outcome);
-    deferredPrompt = null;
-    installBtn.style.display = 'none';
-  }
-});
-const isIos = /iphone|ipad|ipod/.test(window.navigator.userAgent.toLowerCase());
-const isInStandalone = window.navigator.standalone;
-if(isIos && !isInStandalone){
-  installBtn.style.display = 'block';
-  installBtn.innerText = 'Para instalar: Compartir → Añadir a pantalla de inicio';
-}
-</script>
+    // -------------------------
+    // Eventos Socket.IO
+    // -------------------------
+    socket.on("updateUsers", count => {
+      userCount.textContent = "Usuarios conectados: " + count;
+    });
+
+    socket.on("chat history", history => {
+      messages.innerHTML = "";
+      history.forEach(item => addMessage(item.user + ": " + item.msg));
+    });
+
+    socket.on("chat message", data => {
+      addMessage(data.user + ": " + data.msg);
+    });
+
+    socket.on("chat cleared", () => {
+      messages.innerHTML = "";
+    });
+
+    socket.on("notification", data => {
+      if (Notification.permission === "granted") {
+        new Notification(data.title, { body: data.body });
+      }
+    });
+
+    // -------------------------
+    // Enviar mensaje
+    // -------------------------
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      if (input.value) {
+        socket.emit('chat message', { user: "Yo", msg: input.value });
+        input.value = '';
+      }
+    });
+
+    // -------------------------
+    // Vaciar chat
+    // -------------------------
+    clearBtn.addEventListener('click', () => {
+      socket.emit('clear chat');
+    });
+  </script>
 </body>
 </html>
