@@ -1,17 +1,25 @@
+// -------------------------
+// index.js - Inspiring-Flow
+// -------------------------
 const express = require("express");
-const app = express();
-const http = require("http").createServer(app);
-const io = require("socket.io")(http);
 const path = require("path");
+const http = require("http");
+const { Server } = require("socket.io");
 
-// Permitir recibir mensajes grandes
+const app = express();
+const server = http.createServer(app);
+const io = new Server(server);
+
+// -------------------------
+// Middleware
+// -------------------------
+app.use(express.static(__dirname));
 app.use(express.json({ limit: "10mb" }));
 app.use(express.urlencoded({ limit: "10mb", extended: true }));
 
-// Servir archivos estáticos
-app.use(express.static(__dirname));
-
-// Ruta principal
+// -------------------------
+// Rutas
+// -------------------------
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "index.html"));
 });
@@ -19,8 +27,8 @@ app.get("/", (req, res) => {
 // -------------------------
 // Variables del chat
 // -------------------------
-let connectedUsers = 0;    // Contador de usuarios conectados
-let chatHistory = [];      // Historial de mensajes
+let connectedUsers = 0;
+let chatHistory = [];
 
 // -------------------------
 // Socket.IO
@@ -32,19 +40,16 @@ io.on("connection", (socket) => {
   // Actualizar contador a todos
   io.emit("updateUsers", connectedUsers);
 
-  // Enviar historial solo al usuario que se conecta
+  // Enviar historial solo al nuevo usuario
   socket.emit("chat history", chatHistory);
 
-  // Recibir mensajes
+  // Recibir mensaje
   socket.on("chat message", (data) => {
-    chatHistory.push(data);        
+    chatHistory.push(data);
     io.emit("chat message", data);
 
-    // Enviar notificación a todos los clientes
-    io.emit("notification", {
-      title: "Nuevo mensaje de " + data.user,
-      body: data.msg
-    });
+    // Notificación en consola (puedes reemplazar por push si agregas service worker)
+    console.log("Mensaje recibido:", data);
   });
 
   // Vaciar chat
@@ -61,8 +66,10 @@ io.on("connection", (socket) => {
   });
 });
 
-// Puerto asignado por hosting (Railway/Render) o 3000 local
-const port = process.env.PORT || 3000;
-http.listen(port, () => {
-  console.log(`Servidor corriendo en puerto ${port}`);
+// -------------------------
+// Puerto
+// -------------------------
+const PORT = process.env.PORT || 3000;
+server.listen(PORT, () => {
+  console.log(`Inspiring-Flow corriendo en puerto ${PORT}`);
 });
